@@ -13,32 +13,52 @@ import android.widget.TextView;
 
 public class HelloActivity extends Activity implements View.OnClickListener {
 
-    private final static long POMODORO_LEN = 25*60*1000;
+    public long alarmEnd = -1;
+
+    private final static long POMODORO_LEN = 60*1000;
     Button button;
     TextView text;
-    CountDownTimer timer = new CountDownTimer(POMODORO_LEN, 1000) {
-            @Override public void onTick(long millisUntilFinished) {
-                Log.d("1TIMER", "ticks left " + millisUntilFinished);
-                text.setText(format(millisUntilFinished));
-            }
+    CountDownTimer timer;
+    private static class MyCountDown extends CountDownTimer {
 
-            @Override public void onFinish() {
-                Log.d("1TIMER", "Countdown done");
-                HelloActivity.this.stopTimer();
-            }
-        };
-    boolean isRunning;
+        private final HelloActivity _activity;
+
+        MyCountDown(HelloActivity activity, long alarmEnd) {
+            super(alarmEnd - System.currentTimeMillis(), 250);
+            _activity = activity;
+
+        }
+
+        @Override public void onTick(long millisUntilFinished) {
+            Log.d("1TIMER", "ticks left " + millisUntilFinished);
+            _activity.setTimerText(millisUntilFinished);
+        }
+
+        @Override public void onFinish() {
+            Log.d("1TIMER", "Countdown done");
+            _activity.stopTimer();
+        }
+    }
+
+    private boolean isRunning() {
+        return alarmEnd != -1;
+    }
+
+    void setTimerText(long millis) {
+        text.setText(format(millis));
+    }
 
     private void stopTimer() {
-        isRunning = false;
         button.setText("Start");
         text.setText("Ready");
+        alarmEnd = -1;
+        timer.cancel();
+        timer = null;
     }
 
     private void startTimer() {
-        isRunning = true;
         button.setText("Stop");
-        text.setText(format(POMODORO_LEN));
+        text.setText(format(alarmEnd-System.currentTimeMillis()));
     }
 
     private String format(long ms) {
@@ -49,12 +69,13 @@ public class HelloActivity extends Activity implements View.OnClickListener {
 
     @Override public void onClick(View v) {
         Button b = (Button) v;
-        if (isRunning) {
+        if (isRunning()) {
             Log.d("1TIMER", "Countdown stopped");
-            timer.cancel();
             stopTimer();
         } else {
             Log.d("1TIMER", "Countdown started");
+            alarmEnd = System.currentTimeMillis() + POMODORO_LEN;
+            timer = new MyCountDown(this, alarmEnd);
             timer.start();
             startTimer();
         }
@@ -64,9 +85,12 @@ public class HelloActivity extends Activity implements View.OnClickListener {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.hello_layout);
         button = (Button) findViewById(R.id.button_start);
-        button.setText("Start");
         text = (TextView) findViewById(R.id.text_timer);
-        text.setText("Ready");
+        if (savedInstanceState == null) {
+            button.setText("Start");
+            text.setText("Ready");
+        } else
+            onRestoreInstanceState(savedInstanceState);
     }
 
     @Override public void onStart() {
@@ -74,4 +98,31 @@ public class HelloActivity extends Activity implements View.OnClickListener {
         button.setOnClickListener(this);
     }
 
+    @Override public void onSaveInstanceState(Bundle outState) {
+        super.onSaveInstanceState(outState);
+        outState.putLong("alarmEnd", alarmEnd);
+        Log.d("1TIMER", "Saved alarmEnd="+ alarmEnd);
+    }
+
+    @Override public void onRestoreInstanceState(Bundle inState) {
+        super.onRestoreInstanceState(inState);
+        alarmEnd = inState.getLong("alarmEnd", -1);
+        Log.d("1TIMER", "Restored alarmEnd="+ alarmEnd);
+        if (alarmEnd <= System.currentTimeMillis())
+            alarmEnd = -1;
+        if (alarmEnd == -1) {
+            if (timer != null) {
+                timer.cancel();
+                timer = null;
+            }
+            button.setText("Start");
+            text.setText("Ready");
+        } else {
+            if (timer == null) {
+                timer = new MyCountDown(this, alarmEnd);
+                timer.start();
+            }
+            startTimer();
+        }
+    }
 }
