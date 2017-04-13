@@ -2,7 +2,9 @@
 // vim: et ts=4 sts=4 sw=4 syntax=java
 package com.aragaer.onetimer;
 
-import android.app.Activity;
+import android.app.*;
+import android.content.Context;
+import android.content.Intent;
 import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.util.Log;
@@ -16,6 +18,8 @@ public class HelloActivity extends Activity implements View.OnClickListener {
     public long alarmEnd = -1;
 
     private final static long POMODORO_LEN = 60*1000;
+    private final static int ALARM_ID = 1;
+
     Button button;
     TextView text;
     CountDownTimer timer;
@@ -69,12 +73,18 @@ public class HelloActivity extends Activity implements View.OnClickListener {
 
     @Override public void onClick(View v) {
         Button b = (Button) v;
+        AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
+        Intent intent = new Intent(this, AlarmActivity.class);
+        PendingIntent pi = PendingIntent.getActivity(this, ALARM_ID, intent, 0);
         if (isRunning()) {
+            am.cancel(pi);
             Log.d("1TIMER", "Countdown stopped");
             stopTimer();
         } else {
-            Log.d("1TIMER", "Countdown started");
             alarmEnd = System.currentTimeMillis() + POMODORO_LEN;
+            Log.d("1TIMER", "Starting alarm");
+            am.setExact(AlarmManager.RTC_WAKEUP, alarmEnd, pi);
+            Log.d("1TIMER", "Countdown started");
             timer = new MyCountDown(this, alarmEnd);
             timer.start();
             startTimer();
