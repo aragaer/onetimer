@@ -30,7 +30,6 @@ public class HelloActivity extends Activity implements View.OnClickListener {
         MyCountDown(HelloActivity activity, long alarmEnd) {
             super(alarmEnd - System.currentTimeMillis(), 250);
             _activity = activity;
-
         }
 
         @Override public void onTick(long millisUntilFinished) {
@@ -75,6 +74,7 @@ public class HelloActivity extends Activity implements View.OnClickListener {
         Button b = (Button) v;
         AlarmManager am = (AlarmManager) getSystemService(Context.ALARM_SERVICE);
         Intent intent = new Intent(this, AlarmActivity.class);
+        intent.addFlags(Intent.FLAG_ACTIVITY_REORDER_TO_FRONT);
         PendingIntent pi = PendingIntent.getActivity(this, ALARM_ID, intent, 0);
         if (isRunning()) {
             am.cancel(pi);
