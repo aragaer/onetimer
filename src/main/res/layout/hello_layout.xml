@@ -11,4 +11,9 @@
       android:id="@+id/button_start"
       android:layout_width="fill_parent"
       android:layout_height="wrap_content" />
+  <Spinner
+      android:id="@+id/timer_select"
+      android:layout_width="fill_parent"
+      android:layout_height="wrap_content"
+      android:spinnerMode="dropdown" />
 </LinearLayout>

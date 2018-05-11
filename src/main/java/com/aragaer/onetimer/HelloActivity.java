@@ -9,20 +9,25 @@ import android.os.Bundle;
 import android.os.CountDownTimer;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
-import android.widget.TextView;
+import android.widget.*;
 
 
-public class HelloActivity extends Activity implements View.OnClickListener {
+public class HelloActivity extends Activity implements View.OnClickListener,
+                                                       AdapterView.OnItemSelectedListener {
 
     public long alarmEnd = -1;
+    public int timerSelected = 0;
 
-    private final static long POMODORO_LEN = 60*1000;
+    private final static long TIMER_LENS[] = {60*1000, 5*60*1000};
+    private long pomodoro_len = 60*1000;
     private final static int ALARM_ID = 1;
 
     Button button;
     TextView text;
+    ArrayAdapter<CharSequence> adapter;
+    Spinner spinner;
     CountDownTimer timer;
+
     private static class MyCountDown extends CountDownTimer {
 
         private final HelloActivity _activity;
@@ -81,7 +86,7 @@ public class HelloActivity extends Activity implements View.OnClickListener {
             Log.d("1TIMER", "Countdown stopped");
             stopTimer();
         } else {
-            alarmEnd = System.currentTimeMillis() + POMODORO_LEN;
+            alarmEnd = System.currentTimeMillis() + pomodoro_len;
             Log.d("1TIMER", "Starting alarm");
             am.setExact(AlarmManager.RTC_WAKEUP, alarmEnd, pi);
             Log.d("1TIMER", "Countdown started");
@@ -91,11 +96,31 @@ public class HelloActivity extends Activity implements View.OnClickListener {
         }
     }
 
+    @Override public void onItemSelected(AdapterView<?> parent, View view,
+                                         int pos, long id) {
+        timerSelected = pos;
+        pomodoro_len = TIMER_LENS[timerSelected];
+    }
+
+    @Override public void onNothingSelected(AdapterView<?> parent) {
+    }
+
     @Override public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         setContentView(R.layout.hello_layout);
         button = (Button) findViewById(R.id.button_start);
         text = (TextView) findViewById(R.id.text_timer);
+
+        spinner = (Spinner) findViewById(R.id.timer_select);
+        // Create an ArrayAdapter using the string array and a default spinner layout
+        adapter = ArrayAdapter.createFromResource(this,
+                                                  R.array.timers,
+                                                  android.R.layout.simple_spinner_item);
+        // Specify the layout to use when the list of choices appears
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item);
+        // Apply the adapter to the spinner
+        spinner.setAdapter(adapter);
+
         if (savedInstanceState == null) {
             button.setText("Start");
             text.setText("Ready");
@@ -106,11 +131,13 @@ public class HelloActivity extends Activity implements View.OnClickListener {
     @Override public void onStart() {
         super.onStart();
         button.setOnClickListener(this);
+        spinner.setOnItemSelectedListener(this);
     }
 
     @Override public void onSaveInstanceState(Bundle outState) {
         super.onSaveInstanceState(outState);
         outState.putLong("alarmEnd", alarmEnd);
+        outState.putInt("timerSelected", timerSelected);
         Log.d("1TIMER", "Saved alarmEnd="+ alarmEnd);
     }
 
@@ -134,5 +161,6 @@ public class HelloActivity extends Activity implements View.OnClickListener {
             }
             startTimer();
         }
+        timerSelected = inState.getInt("timerSelected", 0);
     }
 }
